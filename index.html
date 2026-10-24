@@ -51,6 +51,7 @@ input,select,textarea{font:inherit;width:100%;padding:11px 14px;border-radius:12
 .er{color:#d33;font-size:14px;min-height:20px}.mt{color:var(--mu);font-size:13px}
 .wf{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:40;background:#25d366;color:#fff;border-radius:999px;padding:13px 18px;font-weight:700;text-decoration:none;box-shadow:0 10px 26px rgba(37,211,102,.45)}
 .ts{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 20px;border-radius:999px;z-index:70;opacity:0;transition:.3s;pointer-events:none}.ts.on{opacity:1}
+.inst{background:linear-gradient(90deg,#c9a24b,#e6c36b);color:#2b2100}.inst .w{display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:14px}.inst span{flex:1}.inst .btn{background:#0e2a52;color:#fff}.inst .x{padding:4px 8px;font-size:18px;line-height:1}
 footer{text-align:center;padding:30px 14px 70px;color:var(--mu)}
 .ov{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--bd)}
 @media(max-width:820px){.lay{grid-template-columns:1fr}.cats{display:none}.cm{display:flex}.lg span{display:none}.ib span{display:none}.hero{height:180px}.wf span{display:none}}
@@ -69,6 +70,7 @@ footer{text-align:center;padding:30px 14px 70px;color:var(--mu)}
 <button class="tab" data-v="orders" id="tO" onclick="go('orders')" hidden>Mes commandes</button>
 <button class="tab" data-v="admin" id="tA" onclick="go('admin')" hidden>⚙️ Gestionnaire</button>
 </div></div>
+<div class="inst" id="inst" hidden><div class="w"><span>📲 <b>Installez l’application</b> LandryDjassa sur votre téléphone</span><button class="btn s" onclick="doInst()">Installer</button><button class="x" onclick="hideInst()" aria-label="Fermer">✕</button></div></div>
 <div id="cfg" class="w" hidden><div class="pn" style="margin-top:14px;border:2px solid var(--go)"><b>Configuration requise</b><br>Ouvrez <code>config.js</code> et collez l’adresse (URL) et la clé de votre projet Supabase. Voir LISEZMOI.md.</div></div>
 
 <main id="v-shop">
@@ -185,6 +187,18 @@ async function rst(i){const u=CL[i];if(!confirm('Réinitialiser le mot de passe 
  const{data,error}=await sb.functions.invoke('reset-password',{body:{user_id:u.id}});
  if(error||!data||data.error)return toast('Erreur : '+((data&&data.error)||(error&&error.message)||'fonction non déployée'));
  modal(`<h3>Mot de passe réinitialisé ✓</h3><p>Mot de passe provisoire de ${esc(u.name)} :</p><p style="font-size:30px;font-weight:800;letter-spacing:.1em">${esc(data.password)}</p><a class="btn wa" target="_blank" rel="noopener" href="${esc(waL(u.phone,'Bonjour '+u.name+', votre mot de passe LandryDjassa a été réinitialisé. Mot de passe provisoire : '+data.password+'. Connectez-vous puis changez-le dans Compte > Changer mon mot de passe.'))}">💬 Envoyer au client</a>`)}
+// installation de l'application (PWA)
+let dip=null;
+const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+function showInst(){if(standalone())return;try{if(Date.now()-(+localStorage.getItem('ld_ix')||0)<3*864e5)return}catch(e){}$('inst').hidden=false}
+function hideInst(){$('inst').hidden=true;try{localStorage.setItem('ld_ix',Date.now())}catch(e){}}
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;showInst()});
+addEventListener('appinstalled',()=>{$('inst').hidden=true;dip=null;toast('Application installée ✓')});
+async function doInst(){
+ if(dip){dip.prompt();const c=await dip.userChoice;dip=null;if(c.outcome==='accepted')$('inst').hidden=true;return}
+ modal(isIOS?'<h3>Installer sur iPhone</h3><p>1. Touchez le bouton <b>Partager</b> (carré avec une flèche) dans Safari.<br>2. Choisissez <b>« Sur l’écran d’accueil »</b>.<br>3. Touchez <b>Ajouter</b>.</p><button class="btn" onclick="close()">OK</button>':'<h3>Installer l’application</h3><p>Touchez le menu <b>⋮</b> de votre navigateur, puis <b>« Installer l’application »</b> (ou « Ajouter à l’écran d’accueil »).</p><button class="btn" onclick="close()">OK</button>')}
+if(standalone())$('inst').hidden=true;else if(isIOS)showInst();
 // bannières
 let si=0;setInterval(()=>{const s=document.querySelectorAll('.sl');s[si].classList.remove('on');si=(si+1)%s.length;s[si].classList.add('on')},4500);
 (async()=>{sv();draw();if(!sb){$('cfg').hidden=false;return}await prof();loadP();sb.auth.onAuthStateChange((e)=>{if(e==='SIGNED_OUT'){me=null;nav()}})})();
